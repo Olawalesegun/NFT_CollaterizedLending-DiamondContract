@@ -12,7 +12,6 @@ import "../contracts/interfaces/IERC721.sol";
 import "./helpers/DiamondUtils.sol";
 
 contract DiamondDeployer is DiamondUtils, IDiamondCut {
-    //contract types of facets to be deployed
     Diamond diamond;
     DiamondCutFacet dCutFacet;
     DiamondLoupeFacet dLoupe;
@@ -28,15 +27,12 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
     address trustFund = 0xC214a6884d5d3A20325d9939B88e9C0b12deAeF7;
 
     function setUp() public {
-        //deploy facets
         dCutFacet = new DiamondCutFacet();
         diamond = new Diamond(address(this), address(dCutFacet));
         dLoupe = new DiamondLoupeFacet();
         ownerF = new OwnershipFacet();
         loanF = new LoanFacet();
-        //upgrade diamond with facets
 
-        //build cut struct
         FacetCut[] memory cut = new FacetCut[](3);
 
         cut[0] = (
@@ -63,32 +59,24 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
             })
         );
 
-        //upgrade diamond
         IDiamondCut(address(diamond)).diamondCut(cut, address(0x0), "");
 
-        //call a function
         DiamondLoupeFacet(address(diamond)).facetAddresses();
 
         nft = IERC721(0x19422aD584A93979b729fB93831C8db2De86b151);
         token = IERC20(daiTokenContract);
-        // BAYC and CrypotoPunks
         address[] memory allowedNFTs = new address[](2);
         allowedNFTs[0] = 0x19422aD584A93979b729fB93831C8db2De86b151;
         allowedNFTs[1] = 0x7dc1BE8f47eE5805095c9bABa7123ED9AB2aB178;
 
-        // initialize loan facet
         LoanFacet(address(diamond)).initialize(allowedNFTs, daiTokenContract);
-
-        // set some tokens to be lent
 
         vm.prank(trustFund);
         token.transfer(address(diamond), 20000e18);
     }
 
     function testLoan() public {
-        // deploy
         setUp();
-        /*==================== Deployment test ====================*/
         console.log("Testing diamond: ");
         assertEq(
             DiamondLoupeFacet(address(diamond)).facetAddresses().length,
@@ -108,8 +96,6 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
             daiTokenContract
         );
         assertEq(token.balanceOf(address(diamond)), 20000e18);
-
-        /*==================== Test Borrowing ====================*/
         uint256 validNftId = 51;
 
         vm.startPrank(borrower);
@@ -121,7 +107,6 @@ contract DiamondDeployer is DiamondUtils, IDiamondCut {
 
         LibDiamond.Loan memory loan = LoanFacet(address(diamond)).getLoan(validNftId);
         assertEq(loan.borrower, borrower);
-        /*==================== Test Repayment ====================*/
     }
 
     function diamondCut(
